@@ -1,58 +1,51 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "./VIBESToken.sol";
 
-
-contract VIBESToken is ERC20Upgradeable, OwnableUpgradeable, PausableUpgradeable {
-   using SafeMathUpgradeable for uint256;
+// SyrupBar with Governance.
+contract SyrupBar is ERC20Upgradeable, OwnableUpgradeable {
+     using SafeMathUpgradeable for uint256;
+    /// @dev Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
+   
    
     function initialize(
         string memory name,
         string memory symbol,
-        uint256 totalSupply
+        VIBESToken _vibes
     ) external initializer {
-        __ERC20_init(name, symbol);
+        __ERC20_init("SyrupBar Vibes Token", "SYRUPVIBES");
         __Ownable_init_unchained();
-        __Pausable_init_unchained();
-
-        _mint(msg.sender, totalSupply * 10 ** decimals());
+        vibes = _vibes;
+    }
+   
+    function mint(address _to, uint256 _amount) public onlyOwner {
+        _mint(_to, _amount);
+        _moveDelegates(address(0), _delegates[_to], _amount);
     }
 
-    function mint(address to, uint256 amount) public onlyOwner {
-        _mint(to, amount);
-        _moveDelegates(address(0), _delegates[to], amount);
+    function burn(address _from, uint256 _amount) public onlyOwner {
+        _burn(_from, _amount);
+        _moveDelegates(_delegates[_from], address(0), _amount);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount)
-        internal
-        whenNotPaused
-        override
-    {
-        super._beforeTokenTransfer(from, to, amount);
-    }
-    
-    
-    function burn(address to, uint256 amount) external onlyOwner returns (bool) {
-        _burn(to, amount);
-        return true;
+    VIBESToken public vibes;
+
+
+    // Safe vibes transfer function, just in case if rounding error causes pool to not have enough VIBES.
+    function safeVibesTransfer(address _to, uint256 _amount) public onlyOwner {
+        uint256 vibesBal = vibes.balanceOf(address(this));
+        if (_amount > vibesBal) {
+            vibes.transfer(_to, vibesBal);
+        } else {
+            vibes.transfer(_to, _amount);
+        }
     }
 
-    function pause() external onlyOwner whenNotPaused returns (bool) {
-        _pause();
-        return true;
-    }
-
-    function unpause() external onlyOwner whenPaused returns (bool) {
-        _unpause();
-        return true;
-    }
-
-     // Copied and modified from YAM code:
+    // Copied and modified from YAM code:
     // https://github.com/yam-finance/yam-protocol/blob/master/contracts/token/YAMGovernanceStorage.sol
     // https://github.com/yam-finance/yam-protocol/blob/master/contracts/token/YAMGovernance.sol
     // Which is copied and modified from COMPOUND:
@@ -102,7 +95,7 @@ contract VIBESToken is ERC20Upgradeable, OwnableUpgradeable, PausableUpgradeable
      * @dev Delegate votes from `msg.sender` to `delegatee`
      * @param delegatee The address to delegate votes to
      */
-    function delegate(address delegatee) external whenNotPaused {
+    function delegate(address delegatee) external {
         return _delegate(msg.sender, delegatee);
     }
 
@@ -122,7 +115,7 @@ contract VIBESToken is ERC20Upgradeable, OwnableUpgradeable, PausableUpgradeable
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external whenNotPaused {
+    ) external {
         bytes32 domainSeparator = keccak256(
             abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name())), getChainId(), address(this))
         );
@@ -191,7 +184,7 @@ contract VIBESToken is ERC20Upgradeable, OwnableUpgradeable, PausableUpgradeable
 
     function _delegate(address delegator, address delegatee) internal {
         address currentDelegate = _delegates[delegator];
-        uint256 delegatorBalance = balanceOf(delegator); // balance of underlying Vibess (not scaled);
+        uint256 delegatorBalance = balanceOf(delegator); // balance of underlying VIBES (not scaled);
         _delegates[delegator] = delegatee;
 
         emit DelegateChanged(delegator, currentDelegate, delegatee);
@@ -253,5 +246,4 @@ contract VIBESToken is ERC20Upgradeable, OwnableUpgradeable, PausableUpgradeable
         }
         return chainId;
     }
-
 }
