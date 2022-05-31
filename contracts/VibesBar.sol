@@ -6,18 +6,16 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "./VIBESToken.sol";
 
-// SyrupBar with Governance.
-contract SyrupBar is ERC20Upgradeable, OwnableUpgradeable {
+// VibesBar with Governance.
+contract VibesBar is ERC20Upgradeable, OwnableUpgradeable {
      using SafeMathUpgradeable for uint256;
     /// @dev Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
    
    
     function initialize(
-        string memory name,
-        string memory symbol,
         VIBESToken _vibes
     ) external initializer {
-        __ERC20_init("SyrupBar Vibes Token", "SYRUPVIBES");
+        __ERC20_init("Bar Vibes Token", "VIBESBAR");
         __Ownable_init_unchained();
         vibes = _vibes;
     }

@@ -8,7 +8,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 
 
 import "./VIBESToken.sol";
-import "./SyrupBar.sol";
+import "./VibesBar.sol";
 
 // import "@nomiclabs/buidler/console.sol";
 
@@ -21,7 +21,7 @@ interface IMigratorChef {
     function migrate(IERC20Upgradeable token) external returns (IERC20Upgradeable);
 }
 
-// MasterChef is the master of CaVIBEke. He can make VIBE and he is a fair guy.
+// MasterChef is the master of Vibes. He can make VIBE and he is a fair guy.
 //
 // Note that it's ownable and the owner wields tremendous power. The ownership
 // will be transferred to a governance smart contract once VIBE is sufficiently
@@ -59,8 +59,8 @@ contract MasterChef is OwnableUpgradeable {
 
     // The VIBES TOKEN!
     VIBESToken public vibes;
-    // The SYRUP TOKEN!
-    SyrupBar public syrup;
+    // The VibesBar TOKEN!
+    VibesBar public bar;
     // Dev address.
     address public devaddr;
     // VIBES tokens created per block.
@@ -86,14 +86,14 @@ contract MasterChef is OwnableUpgradeable {
 
     function initialize(
         VIBESToken _vibes,
-        SyrupBar _syrup,
+        VibesBar _bar,
         address _devaddr,
         uint256 _vibePerBlock,
         uint256 _startBlock
     ) external initializer {
         __Ownable_init_unchained();
         vibes = _vibes;
-        syrup = _syrup;
+        bar = _bar;
         devaddr = _devaddr;
         vibePerBlock = _vibePerBlock;
         startBlock = _startBlock;
@@ -219,7 +219,7 @@ contract MasterChef is OwnableUpgradeable {
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 vibeReward = multiplier.mul(vibePerBlock).mul(pool.allocPoint).div(totalAllocPoint);
         vibes.mint(devaddr, vibeReward.div(10));
-        vibes.mint(address(syrup), vibeReward);
+        vibes.mint(address(bar), vibeReward);
         pool.accVibePerShare = pool.accVibePerShare.add(vibeReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
@@ -282,7 +282,7 @@ contract MasterChef is OwnableUpgradeable {
         }
         user.rewardDebt = user.amount.mul(pool.accVibePerShare).div(1e12);
 
-        syrup.mint(msg.sender, _amount);
+        bar.mint(msg.sender, _amount);
         emit Deposit(msg.sender, 0, _amount);
     }
 
@@ -302,7 +302,7 @@ contract MasterChef is OwnableUpgradeable {
         }
         user.rewardDebt = user.amount.mul(pool.accVibePerShare).div(1e12);
 
-        syrup.burn(msg.sender, _amount);
+        bar.burn(msg.sender, _amount);
         emit Withdraw(msg.sender, 0, _amount);
     }
 
@@ -318,7 +318,7 @@ contract MasterChef is OwnableUpgradeable {
 
     // Safe vibe transfer function, just in case if rounding error causes pool to not have enough VIBES.
     function safeVibesTransfer(address _to, uint256 _amount) internal {
-        syrup.safeVibesTransfer(_to, _amount);
+        bar.safeVibesTransfer(_to, _amount);
     }
 
     // Update dev address by the previous dev.

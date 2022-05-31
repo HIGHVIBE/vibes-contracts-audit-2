@@ -37,7 +37,7 @@ contract VibesLPPair is IVibesPair, VibesLPERC20, Ownable{
 
     function _safeTransfer(address token, address to, uint value) private {
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), 'Pancake: TRANSFER_FAILED');
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'Vibes: TRANSFER_FAILED');
     }
 
     constructor()  {
@@ -118,5 +118,6 @@ contract VibesLPPair is IVibesPair, VibesLPERC20, Ownable{
     function sync() external override lock {
         _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);
     }
+
 
 }
