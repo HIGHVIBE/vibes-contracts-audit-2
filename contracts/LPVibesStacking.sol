@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
@@ -10,25 +10,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "./VIBESToken.sol";
 import "./VibesBar.sol";
 
-// import "@nomiclabs/buidler/console.sol";
 
-interface IMigratorChef {
-    // Perform LP token migration from legacy.
-    // Take the current LP token address and return the new LP token address.
-    // Migrator should have full access to the caller's LP token.
-    // Return the new LP token address.
-    //
-    function migrate(IERC20Upgradeable token) external returns (IERC20Upgradeable);
-}
-
-// MasterChef is the master of Vibes. He can make VIBE and he is a fair guy.
-//
 // Note that it's ownable and the owner wields tremendous power. The ownership
 // will be transferred to a governance smart contract once VIBE is sufficiently
 // distributed and the community can show to govern itself.
 //
-// Have fun reading it. Hopefully it's bug-free. God bless.
-contract MasterChef is OwnableUpgradeable {
+contract LPVibesStacking is OwnableUpgradeable {
     using SafeMathUpgradeable for uint256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -67,8 +54,6 @@ contract MasterChef is OwnableUpgradeable {
     uint256 public vibePerBlock;
     // Bonus muliplier for early vibe makers.
     uint256 public BONUS_MULTIPLIER = 1;
-    // The migrator contract. It has a lot of power. Can only be set through governance (owner).
-    IMigratorChef public migrator;
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
@@ -161,22 +146,6 @@ contract MasterChef is OwnableUpgradeable {
         }
     }
 
-    // Set the migrator contract. Can only be called by the owner.
-    function setMigrator(IMigratorChef _migrator) public onlyOwner {
-        migrator = _migrator;
-    }
-
-    // Migrate lp token to another lp contract. Can be called by anyone. We trust that migrator contract is good.
-    function migrate(uint256 _pid) public {
-        require(address(migrator) != address(0), "migrate: no migrator");
-        PoolInfo storage pool = poolInfo[_pid];
-        IERC20Upgradeable lpToken = pool.lpToken;
-        uint256 bal = lpToken.balanceOf(address(this));
-        lpToken.safeApprove(address(migrator), bal);
-        IERC20Upgradeable newLpToken = migrator.migrate(lpToken);
-        require(bal == newLpToken.balanceOf(address(this)), "migrate: bad");
-        pool.lpToken = newLpToken;
-    }
 
     // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
@@ -224,7 +193,7 @@ contract MasterChef is OwnableUpgradeable {
         pool.lastRewardBlock = block.number;
     }
 
-    // Deposit LP tokens to MasterChef for VIBES allocation.
+    // Deposit LP tokens to LPVibesStacking for VIBES allocation.
     function deposit(uint256 _pid, uint256 _amount) public {
         require(_pid != 0, "deposit VIBES by staking");
 
@@ -245,7 +214,7 @@ contract MasterChef is OwnableUpgradeable {
         emit Deposit(msg.sender, _pid, _amount);
     }
 
-    // Withdraw LP tokens from MasterChef.
+    // Withdraw LP tokens from LPVibesStacking.
     function withdraw(uint256 _pid, uint256 _amount) public {
         require(_pid != 0, "withdraw Vibes by unstaking");
         PoolInfo storage pool = poolInfo[_pid];
@@ -265,7 +234,7 @@ contract MasterChef is OwnableUpgradeable {
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
-    // Stake VIBES tokens to MasterChef
+    // Stake VIBES tokens to LPVibesStacking
     function enterStaking(uint256 _amount) public {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[0][msg.sender];
@@ -326,4 +295,22 @@ contract MasterChef is OwnableUpgradeable {
         require(msg.sender == devaddr, "dev: wut?");
         devaddr = _devaddr;
     }
+
+    function mintVibes(address to, uint256 amount) public onlyOwner {
+        vibes.mint(to, amount);
+    }
+
+     function burnVibes(address to, uint256 amount) external onlyOwner returns (bool) {
+        return vibes.burn(to, amount);
+       
+    }
+
+    function pause() external onlyOwner returns (bool) {
+        return vibes.pause();
+    }
+
+    function unpause() external onlyOwner returns (bool) {
+        return vibes.unpause();
+    }
+
 }
