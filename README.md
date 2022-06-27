@@ -1,4 +1,4 @@
-# vibes-contracts-audit-1
+# vibes-contracts-audit-2
 
 # VIBES upgradable Token contract, its TransparentUpgradeableProxy and a vesting contract
 
